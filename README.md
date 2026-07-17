@@ -141,7 +141,7 @@ defaults; the notable ones:
 
 ```bash
 source venv/bin/activate
-python -m claude_phone
+python -m claude_phone.main
 ```
 
 With `PHONE_TRIGGER=keyboard`, press Enter to "pick up," talk, press Enter
@@ -162,7 +162,7 @@ Wants=network-online.target
 
 [Service]
 WorkingDirectory=/home/pi/claude-phone
-ExecStart=/home/pi/claude-phone/venv/bin/python -m claude_phone
+ExecStart=/home/pi/claude-phone/venv/bin/python -m claude_phone.main
 Restart=on-failure
 User=pi
 
