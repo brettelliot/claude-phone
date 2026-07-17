@@ -1,0 +1,8 @@
+anthropic
+openai
+httpx
+pydub
+python-dotenv
+gpiozero
+sounddevice
+soundfile
