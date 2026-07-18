@@ -1,8 +1,8 @@
 # claude-phone
 
-Turn an old landline handset into a voice interface for Claude. Pick up the
-handset, talk, and Claude talks back — powered by a Raspberry Pi, the
-Anthropic API, and speech-to-text/text-to-speech.
+Turn an old landline handset into a voice interface for an LLM. Pick up the
+handset, talk, and Claude (or Gemini) talks back — powered by a Raspberry Pi,
+the Anthropic or Google API, and speech-to-text/text-to-speech.
 
 ## How it works
 
@@ -11,7 +11,7 @@ Anthropic API, and speech-to-text/text-to-speech.
 1. Wait for the phone to be picked up (hook switch, or Enter key for testing).
 2. Play a greeting through the earpiece.
 3. Record until the caller stops talking (silence detection), transcribe it
-   (`stt.py`, via Wispr Flow or OpenAI Whisper), send it to Claude
+   (`stt.py`, via Wispr Flow or OpenAI Whisper), send it to Claude or Gemini
    (`assistant.py`, keeping the conversation history for the call), and speak
    the reply back (`tts.py`, via OpenAI TTS).
 4. Repeat until the handset goes back on the hook, then reset the
@@ -125,14 +125,17 @@ defaults; the notable ones:
 
 | Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Required. Used for Claude replies. |
 | `OPENAI_API_KEY` | Required. Used for TTS, and STT if `STT_PROVIDER=openai`. |
+| `LLM_PROVIDER` | `claude` (default) or `gemini`. Which LLM answers the call. |
+| `ANTHROPIC_API_KEY` | Required if `LLM_PROVIDER=claude`. |
+| `CLAUDE_MODEL` | Defaults to `claude-sonnet-5`. |
+| `GEMINI_API_KEY` | Required if `LLM_PROVIDER=gemini`. Get one at https://aistudio.google.com/apikey. |
+| `GEMINI_MODEL` | Defaults to `gemini-flash-latest`. |
 | `STT_PROVIDER` | `wispr` (default) or `openai`. |
 | `WISPR_FLOW_API_KEY` | Required if `STT_PROVIDER=wispr`. Get one at https://platform.wisprflow.ai/. |
 | `PHONE_TRIGGER` | `keyboard` (default, for development) or `gpio` (real hook switch). |
 | `HOOK_GPIO_PIN` | BCM pin number for the hook switch. Default `17`. |
 | `INPUT_DEVICE` / `OUTPUT_DEVICE` | Override the audio device used, if not the system default. |
-| `CLAUDE_MODEL` | Defaults to `claude-sonnet-5`. |
 | `TTS_MODEL` / `TTS_VOICE` | OpenAI TTS model/voice. Defaults `tts-1` / `alloy`. |
 | `SILENCE_THRESHOLD` / `SILENCE_DURATION` | Tune end-of-speech detection sensitivity. |
 | `MAX_RECORDING_SECONDS` | Hard cap on a single turn's recording length. |

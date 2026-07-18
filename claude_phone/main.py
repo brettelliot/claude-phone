@@ -19,7 +19,7 @@ def handle_call(trigger) -> None:
         print(f"You said: {heard}")
 
         reply = conversation.ask(heard)
-        print(f"Claude: {reply}")
+        print(f"{config.LLM_PROVIDER}: {reply}")
 
         audio_io.play_audio(tts.synthesize(reply))
 

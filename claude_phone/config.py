@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-# Only required when STT_PROVIDER=wispr; validated at point of use, not here,
-# so switching providers doesn't force you to set both keys.
+# Only required for their respective providers; validated at point of use,
+# not here, so switching providers doesn't force you to set unused keys.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 WISPR_FLOW_API_KEY = os.environ.get("WISPR_FLOW_API_KEY", "")
 
 PHONE_TRIGGER = os.environ.get("PHONE_TRIGGER", "keyboard")
@@ -16,7 +17,10 @@ HOOK_GPIO_PIN = int(os.environ.get("HOOK_GPIO_PIN", "17"))
 INPUT_DEVICE = os.environ.get("INPUT_DEVICE") or None
 OUTPUT_DEVICE = os.environ.get("OUTPUT_DEVICE") or None
 
+# "claude" (Anthropic) or "gemini" (Google)
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "claude")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")  # only used when LLM_PROVIDER=gemini
 TTS_MODEL = os.environ.get("TTS_MODEL", "tts-1")
 TTS_VOICE = os.environ.get("TTS_VOICE", "alloy")
 
