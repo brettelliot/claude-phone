@@ -59,5 +59,7 @@ def audio_to_wav_bytes(samples: np.ndarray) -> bytes:
 def play_audio(audio_bytes: bytes) -> None:
     """Play back audio (any format soundfile can read, e.g. WAV) and block until done."""
     samples, samplerate = sf.read(io.BytesIO(audio_bytes), dtype="float32")
+    if config.OUTPUT_VOLUME != 1.0:
+        samples = np.clip(samples * config.OUTPUT_VOLUME, -1.0, 1.0)
     sd.play(samples, samplerate, device=config.OUTPUT_DEVICE)
     sd.wait()

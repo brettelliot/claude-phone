@@ -16,6 +16,7 @@ HOOK_GPIO_PIN = int(os.environ.get("HOOK_GPIO_PIN", "17"))
 
 INPUT_DEVICE = os.environ.get("INPUT_DEVICE") or None
 OUTPUT_DEVICE = os.environ.get("OUTPUT_DEVICE") or None
+OUTPUT_VOLUME = float(os.environ.get("OUTPUT_VOLUME", "1.5"))
 
 # "claude" (Anthropic) or "gemini" (Google)
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "claude")
