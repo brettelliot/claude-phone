@@ -90,6 +90,9 @@ and if pickup/hangup are backwards, swap the assumption in
 2. SSH in and install system dependencies:
 
    ```bash
+   ping brett-pi.local
+   ssh brett@brett-pi.local
+   sudo apt update && sudo apt install git -y
    sudo apt update
    sudo apt install -y python3-venv python3-pip portaudio19-dev libsndfile1
    ```
@@ -104,6 +107,7 @@ and if pickup/hangup are backwards, swap the assumption in
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
+   python3 -m venv --system-site-packages /home/brett/claude-phone/venv
    ```
 4. Copy the env file and fill in your keys:
 
@@ -164,19 +168,31 @@ After=network-online.target sound.target
 Wants=network-online.target
 
 [Service]
-WorkingDirectory=/home/pi/claude-phone
-ExecStart=/home/pi/claude-phone/venv/bin/python -m claude_phone.main
+WorkingDirectory=/home/brett/claude-phone
+ExecStart=/home/brett/claude-phone/venv/bin/python -m claude_phone.main
 Restart=on-failure
-User=pi
+User=brett
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+```bash
+sudo cp claude-phone.service.example /etc/systemd/system/claude-phone.service
+```
+
+or:
+```bash
+sudo nano /etc/systemd/system/claude-phone.service
+```
+
 Then:
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable --now claude-phone
+sudo systemctl start claude-phone.service
+sudo systemctl status claude-phone.service
 journalctl -u claude-phone -f   # to watch logs
 ```
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=claude-phone
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/brett/claude-phone
+ExecStart=/home/brett/claude-phone/venv/bin/python -m claude_phone.main
+Restart=on-failure
+User=brett
+
+[Install]
+WantedBy=multi-user.target
