@@ -170,6 +170,7 @@ Wants=network-online.target
 
 [Service]
 WorkingDirectory=/home/brett/claude-phone
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/home/brett/claude-phone/venv/bin/python -m claude_phone.main
 Restart=on-failure
 User=brett
