@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 from . import audio_io, config, stt, tts
 from .assistant import Conversation
+from .errors import QuotaExceededError
 from .trigger import get_trigger
 
 GREETING = "Hello?"
@@ -15,32 +16,49 @@ def timed(label: str):
     print(f"[timing] {label}: {time.perf_counter() - start:.2f}s")
 
 
+def _apologize_and_end_call(e: QuotaExceededError) -> None:
+    print(f"[quota] {e}")
+    message = f"Sorry, I've hit my usage quota for {e.provider}. Please try again later. Goodbye."
+    try:
+        audio_io.play_audio(tts.synthesize(message))
+    except QuotaExceededError:
+        print("[quota] couldn't speak the apology either -- TTS quota is also exhausted")
+
+
 def handle_call(trigger) -> None:
     conversation = Conversation()
-    with timed("tts:greeting"):
-        greeting_audio = tts.synthesize(GREETING)
-    with timed("playback:greeting"):
-        audio_io.play_audio(greeting_audio)
+    try:
+        with timed("tts:greeting"):
+            greeting_audio = tts.synthesize(GREETING)
+        with timed("playback:greeting"):
+            audio_io.play_audio(greeting_audio)
+    except QuotaExceededError as e:
+        _apologize_and_end_call(e)
+        return
 
     while not trigger.is_hung_up():
         with timed("record (includes caller's speaking time)"):
             samples = audio_io.record_until_silence()
         wav_bytes = audio_io.audio_to_wav_bytes(samples)
 
-        with timed("stt"):
-            heard = stt.transcribe(wav_bytes)
-        if not heard:
-            continue
-        print(f"You said: {heard}")
+        try:
+            with timed("stt"):
+                heard = stt.transcribe(wav_bytes)
+            if not heard:
+                continue
+            print(f"You said: {heard}")
 
-        with timed("llm"):
-            reply = conversation.ask(heard)
-        print(f"{config.LLM_PROVIDER}: {reply}")
+            with timed("llm"):
+                reply = conversation.ask(heard)
+            print(f"{config.LLM_PROVIDER}: {reply}")
 
-        with timed("tts:reply"):
-            reply_audio = tts.synthesize(reply)
-        with timed("playback:reply"):
-            audio_io.play_audio(reply_audio)
+            with timed("tts:reply"):
+                reply_audio = tts.synthesize(reply)
+            with timed("playback:reply"):
+                audio_io.play_audio(reply_audio)
+        except QuotaExceededError as e:
+            _apologize_and_end_call(e)
+            break
 
     print("Call ended.\n")
 

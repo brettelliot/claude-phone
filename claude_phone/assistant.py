@@ -5,11 +5,13 @@ history is kept in a provider-neutral form (role "user"/"assistant" + text)
 and translated to each SDK's native message format at call time.
 """
 
-from anthropic import Anthropic
+from anthropic import Anthropic, RateLimitError as AnthropicRateLimitError
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
 from . import config
+from .errors import QuotaExceededError
 
 _anthropic_client = None
 _gemini_client = None
@@ -34,12 +36,15 @@ def _get_gemini_client() -> genai.Client:
 
 
 def _ask_claude(messages: list[dict]) -> str:
-    response = _get_anthropic_client().messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=1024,
-        system=config.SYSTEM_PROMPT,
-        messages=messages,
-    )
+    try:
+        response = _get_anthropic_client().messages.create(
+            model=config.CLAUDE_MODEL,
+            max_tokens=1024,
+            system=config.SYSTEM_PROMPT,
+            messages=messages,
+        )
+    except AnthropicRateLimitError as e:
+        raise QuotaExceededError("Claude (Anthropic)", e.message) from e
     return "".join(block.text for block in response.content if block.type == "text")
 
 
@@ -51,11 +56,16 @@ def _ask_gemini(messages: list[dict]) -> str:
         )
         for message in messages
     ]
-    response = _get_gemini_client().models.generate_content(
-        model=config.GEMINI_MODEL,
-        contents=contents,
-        config=types.GenerateContentConfig(system_instruction=config.SYSTEM_PROMPT),
-    )
+    try:
+        response = _get_gemini_client().models.generate_content(
+            model=config.GEMINI_MODEL,
+            contents=contents,
+            config=types.GenerateContentConfig(system_instruction=config.SYSTEM_PROMPT),
+        )
+    except genai_errors.ClientError as e:
+        if e.code == 429:
+            raise QuotaExceededError("Gemini (Google)", e.message) from e
+        raise
     return response.text.strip()
 
 

@@ -9,9 +9,10 @@ audio_io.audio_to_wav_bytes() directly.
 import base64
 
 import httpx
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from . import config
+from .errors import QuotaExceededError
 
 _WISPR_API_URL = "https://platform-api.wisprflow.ai/api/v1/dash/api"
 
@@ -19,10 +20,13 @@ _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 
 def _transcribe_openai(wav_bytes: bytes) -> str:
-    result = _openai_client.audio.transcriptions.create(
-        model=config.STT_MODEL,
-        file=("speech.wav", wav_bytes, "audio/wav"),
-    )
+    try:
+        result = _openai_client.audio.transcriptions.create(
+            model=config.STT_MODEL,
+            file=("speech.wav", wav_bytes, "audio/wav"),
+        )
+    except RateLimitError as e:
+        raise QuotaExceededError("OpenAI Whisper", e.message) from e
     return result.text.strip()
 
 
@@ -39,6 +43,8 @@ def _transcribe_wispr(wav_bytes: bytes) -> str:
         },
         timeout=30,
     )
+    if response.status_code == 429:
+        raise QuotaExceededError("Wispr Flow", response.text)
     response.raise_for_status()
     return response.json()["text"].strip()
 
