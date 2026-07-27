@@ -16,6 +16,14 @@ class Trigger(ABC):
     def is_hung_up(self) -> bool:
         """Non-blocking check: has the phone been hung up right now?"""
 
+    @abstractmethod
+    def poll_hung_up(self) -> bool:
+        """Cheap, side-effect-free check of the current hung-up state.
+
+        Unlike is_hung_up(), safe to call multiple times per turn (e.g. right
+        before an API call) without prompting or otherwise blocking.
+        """
+
 
 class KeyboardTrigger(Trigger):
     """Stand-in for the hook switch: press Enter to pick up, Enter again to hang up."""
@@ -39,6 +47,9 @@ class KeyboardTrigger(Trigger):
             return True
         return False
 
+    def poll_hung_up(self) -> bool:
+        return not self._on_call
+
 
 class GPIOTrigger(Trigger):
     """Real hook switch on a Raspberry Pi via gpiozero.
@@ -61,6 +72,9 @@ class GPIOTrigger(Trigger):
         self._button.wait_for_press()
 
     def is_hung_up(self) -> bool:
+        return not self._button.is_pressed
+
+    def poll_hung_up(self) -> bool:
         return not self._button.is_pressed
 
 

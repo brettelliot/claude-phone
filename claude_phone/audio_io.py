@@ -10,8 +10,11 @@ import soundfile as sf
 from . import config
 
 
-def record_until_silence() -> np.ndarray:
+def record_until_silence(trigger) -> np.ndarray:
     """Record from the mic until the caller stops talking (or hits the max duration).
+
+    Also stops immediately if `trigger` reports the phone was hung up mid-recording,
+    so a hangup doesn't feed leftover/background audio into the STT/LLM/TTS pipeline.
 
     Returns mono float32 samples at config.SAMPLE_RATE.
     """
@@ -28,6 +31,9 @@ def record_until_silence() -> np.ndarray:
     ) as stream:
         print("Listening...")
         while True:
+            if trigger.poll_hung_up():
+                break
+
             block, _ = stream.read(int(config.SAMPLE_RATE * 0.1))
             chunks.append(block.copy())
 
@@ -46,6 +52,8 @@ def record_until_silence() -> np.ndarray:
             if now - started_at >= config.MAX_RECORDING_SECONDS:
                 break
 
+    if not chunks:
+        return np.zeros(0, dtype="float32")
     return np.concatenate(chunks, axis=0).flatten()
 
 

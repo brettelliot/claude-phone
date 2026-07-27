@@ -46,7 +46,11 @@ def handle_call(trigger) -> None:
 
     while not trigger.is_hung_up():
         with timed("record (includes caller's speaking time)"):
-            samples = audio_io.record_until_silence()
+            samples = audio_io.record_until_silence(trigger)
+
+        if trigger.poll_hung_up():
+            break
+
         wav_bytes = audio_io.audio_to_wav_bytes(samples)
 
         try:
@@ -56,9 +60,15 @@ def handle_call(trigger) -> None:
                 continue
             print(f"You said: {heard}")
 
+            if trigger.poll_hung_up():
+                break
+
             with timed("llm"):
                 reply = conversation.ask(heard)
             print(f"{config.LLM_PROVIDER}: {reply}")
+
+            if trigger.poll_hung_up():
+                break
 
             with timed("tts:reply"):
                 reply_audio = tts.synthesize(reply)
