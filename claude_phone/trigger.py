@@ -25,6 +25,7 @@ class KeyboardTrigger(Trigger):
 
     def wait_for_pickup(self) -> None:
         input("\n[phone on hook] Press Enter to pick up...")
+        print("[hook] picked up")
         self._on_call = True
 
     def is_hung_up(self) -> bool:
@@ -33,6 +34,7 @@ class KeyboardTrigger(Trigger):
         # Hang up is checked between turns, not asynchronously, so we ask here.
         answer = input("[on call] Press Enter to keep talking, or type 'hangup': ").strip().lower()
         if answer == "hangup":
+            print("[hook] hung up")
             self._on_call = False
             return True
         return False
@@ -52,6 +54,8 @@ class GPIOTrigger(Trigger):
         # Button.is_pressed == True means the switch contact is closed.
         # Assumes closed == handset lifted; flip if your wiring is reversed.
         self._button = Button(pin, pull_up=True)
+        self._button.when_pressed = lambda: print("[hook] switch closed (picked up, per current wiring assumption)")
+        self._button.when_released = lambda: print("[hook] switch opened (hung up, per current wiring assumption)")
 
     def wait_for_pickup(self) -> None:
         self._button.wait_for_press()

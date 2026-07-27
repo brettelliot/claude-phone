@@ -1,3 +1,4 @@
+import sys
 import time
 from contextlib import contextmanager
 
@@ -5,6 +6,13 @@ from . import audio_io, config, stt, tts
 from .assistant import Conversation
 from .errors import QuotaExceededError
 from .trigger import get_trigger
+
+# When stdout isn't a terminal (e.g. piped to journald under systemd), Python
+# fully block-buffers it, so prints only reach the journal in bursts on exit
+# instead of live. Force line buffering so `journalctl -f` shows lines as they
+# happen. This is independent of PYTHONUNBUFFERED so it works regardless of
+# how the process is launched.
+sys.stdout.reconfigure(line_buffering=True)
 
 GREETING = "Hello?"
 

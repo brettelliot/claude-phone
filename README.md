@@ -198,6 +198,15 @@ sudo systemctl status claude-phone.service
 journalctl -u claude-phone -f   # to watch logs
 ```
 
+## Pushing changes
+When this repo changes ssh into device then:
+```bash
+   cd claude-phone
+   git pull
+   sudo systemctl daemon-reload && sudo systemctl restart claude-phone
+   journalctl -u claude-phone -f   # if you want to watch logs
+```
+
 ## Troubleshooting
 
 - **No audio devices found / wrong device picked**: run
