@@ -2,6 +2,7 @@
 
 import io
 import time
+from typing import Iterable
 
 import numpy as np
 import sounddevice as sd
@@ -64,10 +65,21 @@ def audio_to_wav_bytes(samples: np.ndarray) -> bytes:
     return buf.read()
 
 
-def play_audio(audio_bytes: bytes) -> None:
-    """Play back audio (any format soundfile can read, e.g. WAV) and block until done."""
-    samples, samplerate = sf.read(io.BytesIO(audio_bytes), dtype="float32")
-    if config.OUTPUT_VOLUME != 1.0:
-        samples = np.clip(samples * config.OUTPUT_VOLUME, -1.0, 1.0)
-    sd.play(samples, samplerate, device=config.OUTPUT_DEVICE)
-    sd.wait()
+def play_pcm_stream(chunks: Iterable[bytes], samplerate: int, trigger) -> None:
+    """Plays raw mono 16-bit PCM chunks as they arrive, so playback can start before
+    the whole clip has been synthesized. Stops immediately if `trigger` reports a
+    hangup mid-playback.
+    """
+    with sd.RawOutputStream(
+        samplerate=samplerate,
+        channels=1,
+        dtype="int16",
+        device=config.OUTPUT_DEVICE,
+    ) as stream:
+        for chunk in chunks:
+            if trigger.poll_hung_up():
+                break
+            if config.OUTPUT_VOLUME != 1.0:
+                samples = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) * config.OUTPUT_VOLUME
+                chunk = np.clip(samples, -32768, 32767).astype(np.int16).tobytes()
+            stream.write(chunk)

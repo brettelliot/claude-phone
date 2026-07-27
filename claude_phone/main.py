@@ -24,11 +24,11 @@ def timed(label: str):
     print(f"[timing] {label}: {time.perf_counter() - start:.2f}s")
 
 
-def _apologize_and_end_call(e: QuotaExceededError) -> None:
+def _apologize_and_end_call(e: QuotaExceededError, trigger) -> None:
     print(f"[quota] {e}")
     message = f"Sorry, I've hit my usage quota for {e.provider}. Please try again later. Goodbye."
     try:
-        audio_io.play_audio(tts.synthesize(message))
+        audio_io.play_pcm_stream(tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
     except QuotaExceededError:
         print("[quota] couldn't speak the apology either -- TTS quota is also exhausted")
 
@@ -36,12 +36,10 @@ def _apologize_and_end_call(e: QuotaExceededError) -> None:
 def handle_call(trigger) -> None:
     conversation = Conversation()
     try:
-        with timed("tts:greeting"):
-            greeting_audio = tts.synthesize(GREETING)
-        with timed("playback:greeting"):
-            audio_io.play_audio(greeting_audio)
+        with timed("tts:greeting+playback"):
+            audio_io.play_pcm_stream(tts.synthesize_stream(GREETING), tts.PCM_SAMPLE_RATE, trigger)
     except QuotaExceededError as e:
-        _apologize_and_end_call(e)
+        _apologize_and_end_call(e, trigger)
         return
 
     while not trigger.is_hung_up():
@@ -70,12 +68,10 @@ def handle_call(trigger) -> None:
             if trigger.poll_hung_up():
                 break
 
-            with timed("tts:reply"):
-                reply_audio = tts.synthesize(reply)
-            with timed("playback:reply"):
-                audio_io.play_audio(reply_audio)
+            with timed("tts:reply+playback"):
+                audio_io.play_pcm_stream(tts.synthesize_stream(reply), tts.PCM_SAMPLE_RATE, trigger)
         except QuotaExceededError as e:
-            _apologize_and_end_call(e)
+            _apologize_and_end_call(e, trigger)
             break
 
     print("Call ended.\n")
@@ -83,6 +79,10 @@ def handle_call(trigger) -> None:
 
 def main() -> None:
     trigger = get_trigger(config.PHONE_TRIGGER, config.HOOK_GPIO_PIN)
+    with timed("warmup"):
+        tts.warm_up()
+        if config.STT_PROVIDER == "openai":
+            stt.warm_up()
     print(f"Ready. Using '{config.PHONE_TRIGGER}' trigger.")
     while True:
         trigger.wait_for_pickup()

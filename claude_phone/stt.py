@@ -19,6 +19,14 @@ _WISPR_API_URL = "https://platform-api.wisprflow.ai/api/v1/dash/api"
 _openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 
+def warm_up() -> None:
+    """Forces DNS/TLS/connection-pool setup at startup instead of on the first real call."""
+    try:
+        _openai_client.models.list()
+    except Exception as e:
+        print(f"[warmup] OpenAI STT warm-up failed (harmless, will retry on first real call): {e}")
+
+
 def _transcribe_openai(wav_bytes: bytes) -> str:
     try:
         result = _openai_client.audio.transcriptions.create(
