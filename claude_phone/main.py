@@ -1,6 +1,7 @@
 import sys
 import time
 from contextlib import contextmanager
+from pathlib import Path
 
 from . import audio_io, config, stt, tts
 from .assistant import Conversation
@@ -14,7 +15,20 @@ from .trigger import get_trigger
 # how the process is launched.
 sys.stdout.reconfigure(line_buffering=True)
 
-GREETING = "Hello?"
+ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets" / "greetings"
+
+
+def _load_greeting_audio(provider: str) -> bytes:
+    """Loads the pre-recorded greeting for `provider` so it can be played with zero
+    TTS latency at pickup. Generate/refresh it with scripts/generate_greeting.py.
+    """
+    path = ASSETS_DIR / f"{provider}.pcm"
+    if not path.exists():
+        raise RuntimeError(
+            f"Missing greeting asset for provider {provider!r}: {path}. "
+            f"Run `python scripts/generate_greeting.py {provider}` to generate it."
+        )
+    return path.read_bytes()
 
 
 @contextmanager
@@ -42,14 +56,10 @@ def _apologize_and_continue(e: ModelOverloadedError, trigger) -> None:
         print("[overloaded] couldn't speak the apology either -- TTS quota is also exhausted")
 
 
-def handle_call(trigger) -> None:
+def handle_call(trigger, greeting_audio: bytes) -> None:
     conversation = Conversation()
-    try:
-        with timed("tts:greeting+playback"):
-            audio_io.play_pcm_stream(tts.synthesize_stream(GREETING), tts.PCM_SAMPLE_RATE, trigger)
-    except QuotaExceededError as e:
-        _apologize_and_end_call(e, trigger)
-        return
+    with timed("greeting playback"):
+        audio_io.play_pcm_stream([greeting_audio], tts.PCM_SAMPLE_RATE, trigger)
 
     while not trigger.is_hung_up():
         with timed("record (includes caller's speaking time)"):
@@ -91,6 +101,7 @@ def handle_call(trigger) -> None:
 
 def main() -> None:
     trigger = get_trigger(config.PHONE_TRIGGER, config.HOOK_GPIO_PIN)
+    greeting_audio = _load_greeting_audio(config.LLM_PROVIDER)
     with timed("warmup"):
         tts.warm_up()
         if config.STT_PROVIDER == "openai":
@@ -98,7 +109,7 @@ def main() -> None:
     print(f"Ready. Using '{config.PHONE_TRIGGER}' trigger.")
     while True:
         trigger.wait_for_pickup()
-        handle_call(trigger)
+        handle_call(trigger, greeting_audio)
 
 
 if __name__ == "__main__":

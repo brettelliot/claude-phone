@@ -9,7 +9,9 @@ the Anthropic or Google API, and speech-to-text/text-to-speech.
 `claude_phone/main.py` runs a simple loop:
 
 1. Wait for the phone to be picked up (hook switch, or Enter key for testing).
-2. Play a greeting through the earpiece.
+2. Play a greeting through the earpiece. This is a pre-recorded clip (one per
+   `LLM_PROVIDER`, in `assets/greetings/`) rather than a live TTS call, so
+   there's no synthesis latency before the caller hears anything.
 3. Record until the caller stops talking (silence detection), transcribe it
    (`stt.py`, via Wispr Flow or OpenAI Whisper), send it to Claude or Gemini
    (`assistant.py`, keeping the conversation history for the call), and speak
@@ -144,6 +146,20 @@ defaults; the notable ones:
 | `TTS_MODEL` / `TTS_VOICE` | OpenAI TTS model/voice. Defaults `tts-1` / `alloy`. |
 | `SILENCE_THRESHOLD` / `SILENCE_DURATION` | Tune end-of-speech detection sensitivity. |
 | `MAX_RECORDING_SECONDS` | Hard cap on a single turn's recording length. |
+
+## Updating the greeting
+
+The greeting played at pickup (`config.GREETINGS`, one line per
+`LLM_PROVIDER`) is pre-recorded to `assets/greetings/<provider>.pcm` rather
+than synthesized live. If you change the greeting text, `TTS_VOICE`, or
+`TTS_MODEL`, regenerate the affected asset(s) and commit the result:
+
+```bash
+python scripts/generate_greeting.py            # regenerate every provider
+python scripts/generate_greeting.py gemini     # or just one
+```
+
+The app fails fast at startup if the active provider's asset is missing.
 
 ## Running
 

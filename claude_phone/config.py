@@ -35,6 +35,11 @@ SILENCE_THRESHOLD = float(os.environ.get("SILENCE_THRESHOLD", "0.02"))
 SILENCE_DURATION = float(os.environ.get("SILENCE_DURATION", "1.5"))
 MAX_RECORDING_SECONDS = float(os.environ.get("MAX_RECORDING_SECONDS", "30"))
 
+GREETINGS = {
+    "claude": "Hi, this is Claude. What's your question?",
+    "gemini": "Hi, this is Gemini. What's your question?",
+}
+
 SYSTEM_PROMPT = (
     "You are the voice on the other end of a phone call. Keep replies short, "
     "conversational, and natural to hear spoken aloud -- a sentence or two "
