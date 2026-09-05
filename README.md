@@ -15,7 +15,8 @@ the Anthropic or Google API, and speech-to-text/text-to-speech.
 3. Record until the caller stops talking (silence detection), transcribe it
    (`stt.py`, via Wispr Flow or OpenAI Whisper), send it to Claude or Gemini
    (`assistant.py`, keeping the conversation history for the call), and speak
-   the reply back (`tts.py`, via OpenAI TTS).
+   the reply back (`tts.py`, via OpenAI TTS). While all that's happening, the
+   caller hears quiet comfort noise (`comfort_noise.py`) instead of dead air.
 4. Repeat until the handset goes back on the hook, then reset the
    conversation for the next call.
 
@@ -219,6 +220,8 @@ journalctl -u claude-phone -f   # to watch logs
 ## Pushing changes
 When this repo changes ssh into device then:
 ```bash
+   ping brett-pi.local
+   ssh brett@brett-pi.local
    cd claude-phone
    git pull
    sudo systemctl daemon-reload && sudo systemctl restart claude-phone

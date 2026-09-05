@@ -54,12 +54,15 @@ In `handle_call` (`claude_phone/main.py`), after `record_until_silence` returns,
     ```python
     def play_with_comfort_noise(produce_chunks: Callable[[], Iterable[bytes]], samplerate: int, trigger) -> None:
         """Runs `produce_chunks` on a background thread. Until it yields its first chunk,
-        plays a quiet looping comfort-noise tone instead of dead air; once real chunks
-        start arriving, plays those instead, with no gap. Any exception raised inside
-        `produce_chunks` is re-raised here after the background thread finishes. Stops
-        immediately, whether mid-comfort-noise or mid-reply, if `trigger` reports a hangup.
-        Skips straight to running `produce_chunks` synchronously if
-        `config.COMFORT_NOISE_ENABLED` is false, preserving today's exact behavior.
+        plays quiet comfort noise instead of dead air; once real chunks start arriving,
+        plays those instead, with no gap. Any exception raised inside `produce_chunks` is
+        re-raised here after the background thread finishes producing (or is abandoned, if
+        the call was hung up first). Stops immediately, whether mid-comfort-noise or
+        mid-reply, if `trigger` reports a hangup.
+
+        If `config.COMFORT_NOISE_ENABLED` is false, just runs `produce_chunks`
+        synchronously through `play_pcm_stream`, preserving the original silent-wait
+        behavior exactly.
         """
     ```
     Implementation shape: a `queue.Queue` fed by a daemon worker thread that iterates `produce_chunks()` and puts each chunk (or a sentinel for completion, or a wrapped exception) onto the queue. The main thread opens one `sd.RawOutputStream` for the whole call (comfort noise + reply, back to back, so there's no device re-open click between them) and loops: poll the queue non-blocking; if empty, write the next 100ms comfort-noise chunk and continue; once a real chunk arrives, stop pulling from the comfort-noise generator and drain the queue (blocking, with periodic hangup polling) until the completion sentinel; if the worker's exception sentinel arrives, raise it in the main thread. Every chunk written goes through `_scale_volume`.
