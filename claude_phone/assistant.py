@@ -11,7 +11,7 @@ from google.genai import errors as genai_errors
 from google.genai import types
 
 from . import config
-from .errors import QuotaExceededError
+from .errors import ModelOverloadedError, QuotaExceededError
 
 _anthropic_client = None
 _gemini_client = None
@@ -65,6 +65,10 @@ def _ask_gemini(messages: list[dict]) -> str:
     except genai_errors.ClientError as e:
         if e.code == 429:
             raise QuotaExceededError("Gemini (Google)", e.message) from e
+        raise
+    except genai_errors.ServerError as e:
+        if e.code == 503:
+            raise ModelOverloadedError("Gemini (Google)", e.message) from e
         raise
     return response.text.strip()
 

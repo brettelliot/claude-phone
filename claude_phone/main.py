@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 from . import audio_io, config, stt, tts
 from .assistant import Conversation
-from .errors import QuotaExceededError
+from .errors import ModelOverloadedError, QuotaExceededError
 from .trigger import get_trigger
 
 # When stdout isn't a terminal (e.g. piped to journald under systemd), Python
@@ -31,6 +31,15 @@ def _apologize_and_end_call(e: QuotaExceededError, trigger) -> None:
         audio_io.play_pcm_stream(tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
     except QuotaExceededError:
         print("[quota] couldn't speak the apology either -- TTS quota is also exhausted")
+
+
+def _apologize_and_continue(e: ModelOverloadedError, trigger) -> None:
+    print(f"[overloaded] {e}")
+    message = f"Sorry, the {e.provider} model is temporarily overloaded. Please try asking again in a moment."
+    try:
+        audio_io.play_pcm_stream(tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
+    except QuotaExceededError:
+        print("[overloaded] couldn't speak the apology either -- TTS quota is also exhausted")
 
 
 def handle_call(trigger) -> None:
@@ -73,6 +82,9 @@ def handle_call(trigger) -> None:
         except QuotaExceededError as e:
             _apologize_and_end_call(e, trigger)
             break
+        except ModelOverloadedError as e:
+            _apologize_and_continue(e, trigger)
+            continue
 
     print("Call ended.\n")
 
