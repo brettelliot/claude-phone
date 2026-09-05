@@ -18,6 +18,10 @@ INPUT_DEVICE = os.environ.get("INPUT_DEVICE") or None
 OUTPUT_DEVICE = os.environ.get("OUTPUT_DEVICE") or None
 OUTPUT_VOLUME = float(os.environ.get("OUTPUT_VOLUME", "1.5"))
 
+# Quiet R2D2-style beeps/chirps played while waiting for STT/LLM/TTS instead of dead air.
+COMFORT_NOISE_ENABLED = os.environ.get("COMFORT_NOISE_ENABLED", "true").lower() != "false"
+COMFORT_NOISE_VOLUME = float(os.environ.get("COMFORT_NOISE_VOLUME", "0.11"))  # before OUTPUT_VOLUME scaling
+
 # "claude" (Anthropic) or "gemini" (Google)
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "claude")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")

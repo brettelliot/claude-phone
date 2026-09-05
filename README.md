@@ -143,6 +143,8 @@ defaults; the notable ones:
 | `HOOK_GPIO_PIN` | BCM pin number for the hook switch. Default `17`. |
 | `INPUT_DEVICE` / `OUTPUT_DEVICE` | Override the audio device used, if not the system default. |
 | `OUTPUT_VOLUME` | Software gain multiplier applied to playback. Defaults to `1.5`. |
+| `COMFORT_NOISE_ENABLED` | Play quiet R2D2-style beeps/chirps while waiting for STT/LLM/TTS instead of dead air. Defaults to `true`. |
+| `COMFORT_NOISE_VOLUME` | Comfort noise loudness before `OUTPUT_VOLUME` scaling. Defaults to `0.11`. |
 | `TTS_MODEL` / `TTS_VOICE` | OpenAI TTS model/voice. Defaults `tts-1` / `alloy`. |
 | `SILENCE_THRESHOLD` / `SILENCE_DURATION` | Tune end-of-speech detection sensitivity. |
 | `MAX_RECORDING_SECONDS` | Hard cap on a single turn's recording length. |

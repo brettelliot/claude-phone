@@ -42,7 +42,7 @@ def _apologize_and_end_call(e: QuotaExceededError, trigger) -> None:
     print(f"[quota] {e}")
     message = f"Sorry, I've hit my usage quota for {e.provider}. Please try again later. Goodbye."
     try:
-        audio_io.play_pcm_stream(tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
+        audio_io.play_with_comfort_noise(lambda: tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
     except QuotaExceededError:
         print("[quota] couldn't speak the apology either -- TTS quota is also exhausted")
 
@@ -51,7 +51,7 @@ def _apologize_and_continue(e: ModelOverloadedError, trigger) -> None:
     print(f"[overloaded] {e}")
     message = f"Sorry, the {e.provider} model is temporarily overloaded. Please try asking again in a moment."
     try:
-        audio_io.play_pcm_stream(tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
+        audio_io.play_with_comfort_noise(lambda: tts.synthesize_stream(message), tts.PCM_SAMPLE_RATE, trigger)
     except QuotaExceededError:
         print("[overloaded] couldn't speak the apology either -- TTS quota is also exhausted")
 
@@ -69,32 +69,39 @@ def handle_call(trigger, greeting_audio: bytes) -> None:
             break
 
         wav_bytes = audio_io.audio_to_wav_bytes(samples)
+        result = {"heard": None, "reply": None}
+
+        def produce():
+            with timed("stt"):
+                result["heard"] = stt.transcribe(wav_bytes)
+            if not result["heard"] or trigger.poll_hung_up():
+                return
+            with timed("llm"):
+                result["reply"] = conversation.ask(result["heard"])
+            if trigger.poll_hung_up():
+                return
+            with timed("tts:synthesize"):
+                yield from tts.synthesize_stream(result["reply"])
 
         try:
-            with timed("stt"):
-                heard = stt.transcribe(wav_bytes)
-            if not heard:
-                continue
-            print(f"You said: {heard}")
-
-            if trigger.poll_hung_up():
-                break
-
-            with timed("llm"):
-                reply = conversation.ask(heard)
-            print(f"{config.LLM_PROVIDER}: {reply}")
-
-            if trigger.poll_hung_up():
-                break
-
-            with timed("tts:reply+playback"):
-                audio_io.play_pcm_stream(tts.synthesize_stream(reply), tts.PCM_SAMPLE_RATE, trigger)
+            with timed("reply (wait+playback)"):
+                audio_io.play_with_comfort_noise(produce, tts.PCM_SAMPLE_RATE, trigger)
         except QuotaExceededError as e:
             _apologize_and_end_call(e, trigger)
             break
         except ModelOverloadedError as e:
             _apologize_and_continue(e, trigger)
             continue
+
+        heard = result["heard"]
+        if not heard:
+            continue
+        print(f"You said: {heard}")
+
+        reply = result["reply"]
+        if reply is None:
+            break
+        print(f"{config.LLM_PROVIDER}: {reply}")
 
     print("Call ended.\n")
 
