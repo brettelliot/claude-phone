@@ -1,6 +1,6 @@
 anthropic
 google-genai
-openai
+openai>=1.47.0
 httpx
 pydub
 python-dotenv

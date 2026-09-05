@@ -10,7 +10,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-from . import config
+from . import config, safety
 from .errors import ModelOverloadedError, QuotaExceededError
 
 _anthropic_client = None
@@ -94,5 +94,7 @@ class Conversation:
     def ask(self, text: str) -> str:
         self._messages.append({"role": "user", "content": text})
         reply = self._ask(self._messages)
+        if config.CHILD_SAFETY_ENABLED and not safety.is_child_safe(reply):
+            reply = config.CHILD_SAFETY_FALLBACK_REPLY
         self._messages.append({"role": "assistant", "content": reply})
         return reply

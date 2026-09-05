@@ -146,6 +146,8 @@ defaults; the notable ones:
 | `OUTPUT_VOLUME` | Software gain multiplier applied to playback. Defaults to `1.5`. |
 | `COMFORT_NOISE_ENABLED` | Play quiet R2D2-style beeps/chirps while waiting for STT/LLM/TTS instead of dead air. Defaults to `true`. |
 | `COMFORT_NOISE_VOLUME` | Comfort noise loudness before `OUTPUT_VOLUME` scaling. Defaults to `0.11`. |
+| `CHILD_SAFETY_ENABLED` | Moderate every LLM reply via OpenAI's moderation API before speaking it, swapping in a canned safe reply if flagged (or if the check itself fails). Defaults to `true`. |
+| `CHILD_SAFETY_FALLBACK_REPLY` | Spoken instead of a reply that fails the moderation check. Defaults to `"Let's talk about something else -- what else are you curious about?"` |
 | `TTS_MODEL` / `TTS_VOICE` | OpenAI TTS model/voice. Defaults `tts-1` / `alloy`. |
 | `SILENCE_THRESHOLD` / `SILENCE_DURATION` | Tune end-of-speech detection sensitivity. |
 | `MAX_RECORDING_SECONDS` | Hard cap on a single turn's recording length. |

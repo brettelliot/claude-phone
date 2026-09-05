@@ -22,6 +22,15 @@ OUTPUT_VOLUME = float(os.environ.get("OUTPUT_VOLUME", "1.5"))
 COMFORT_NOISE_ENABLED = os.environ.get("COMFORT_NOISE_ENABLED", "true").lower() != "false"
 COMFORT_NOISE_VOLUME = float(os.environ.get("COMFORT_NOISE_VOLUME", "0.11"))  # before OUTPUT_VOLUME scaling
 
+# Hard technical backstop: every LLM reply is checked against OpenAI's moderation
+# API before being spoken; if flagged (or if the check itself errors), the reply
+# is replaced with CHILD_SAFETY_FALLBACK_REPLY. Independent of LLM_PROVIDER.
+CHILD_SAFETY_ENABLED = os.environ.get("CHILD_SAFETY_ENABLED", "true").lower() != "false"
+CHILD_SAFETY_FALLBACK_REPLY = os.environ.get(
+    "CHILD_SAFETY_FALLBACK_REPLY",
+    "Let's talk about something else -- what else are you curious about?",
+)
+
 # "claude" (Anthropic) or "gemini" (Google)
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "claude")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
@@ -48,5 +57,17 @@ SYSTEM_PROMPT = (
     "You are the voice on the other end of a phone call. Keep replies short, "
     "conversational, and natural to hear spoken aloud -- a sentence or two "
     "unless the caller clearly wants more detail. No markdown, lists, or "
-    "headers, since this is read aloud, not read on screen."
+    "headers, since this is read aloud, not read on screen.\n\n"
+    "This phone can be answered by a child of any age, so every reply must be "
+    "G-rated: no profanity, sexual content, graphic violence, or other mature "
+    "themes. If a caller asks about something inappropriate or sensitive for a "
+    "child (e.g. violence, drugs, sexual topics, self-harm), don't lecture or "
+    "refuse at length -- briefly and kindly steer away from it, for example by "
+    "suggesting they ask a parent or grown-up about that one, then offer to "
+    "help with something else. Stay warm and friendly, like a favorite aunt or "
+    "uncle, not a disclaimer machine. This doesn't mean avoiding real topics "
+    "that merely touch on serious subjects in a factual, age-appropriate way -- "
+    "questions like why dinosaurs went extinct, how predators hunt, or how "
+    "volcanoes erupt should still get normal, straightforward answers. The bar "
+    "is G-rated content, not avoiding every topic that isn't strictly cheerful."
 )

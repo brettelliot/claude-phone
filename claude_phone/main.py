@@ -3,7 +3,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from . import audio_io, config, stt, tts
+from . import audio_io, config, safety, stt, tts
 from .assistant import Conversation
 from .errors import ModelOverloadedError, QuotaExceededError
 from .trigger import get_trigger
@@ -113,6 +113,8 @@ def main() -> None:
         tts.warm_up()
         if config.STT_PROVIDER == "openai":
             stt.warm_up()
+        if config.CHILD_SAFETY_ENABLED:
+            safety.warm_up()
     print(f"Ready. Using '{config.PHONE_TRIGGER}' trigger.")
     while True:
         trigger.wait_for_pickup()
